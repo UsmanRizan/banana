@@ -482,6 +482,7 @@ const App: React.FC = () => {
         <PuzzleModal
           difficulty={activeAction.difficulty}
           timeLimit={activeAction.timeLimit}
+          globalTimeLeft={gameState.timeLeft}
           onComplete={onPuzzleComplete}
           onClose={() => setActiveAction(null)}
         />

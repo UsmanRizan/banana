@@ -1,22 +1,28 @@
-
-import React, { useState, useEffect, useRef } from 'react';
-import { BananaPuzzle, Difficulty } from '../types';
-import { fetchBananaPuzzles } from '../services/bananaApiService';
+import React, { useState, useEffect, useRef } from "react";
+import { BananaPuzzle, Difficulty } from "../types";
+import { fetchBananaPuzzles } from "../services/bananaApiService";
 
 interface PuzzleModalProps {
   difficulty: Difficulty;
   timeLimit: number;
+  globalTimeLeft: number;
   onComplete: (success: boolean) => void;
   onClose: () => void;
 }
 
-const PuzzleModal: React.FC<PuzzleModalProps> = ({ difficulty, timeLimit, onComplete, onClose }) => {
+const PuzzleModal: React.FC<PuzzleModalProps> = ({
+  difficulty,
+  timeLimit,
+  globalTimeLeft,
+  onComplete,
+  onClose,
+}) => {
   const [puzzles, setPuzzles] = useState<BananaPuzzle[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [input, setInput] = useState('');
-  const [timeLeft, setTimeLeft] = useState(timeLimit);
+  const [input, setInput] = useState("");
   const [loading, setLoading] = useState(true);
   const inputRef = useRef<HTMLInputElement>(null);
+  const timeStartedRef = useRef(Date.now());
 
   useEffect(() => {
     async function load() {
@@ -29,21 +35,11 @@ const PuzzleModal: React.FC<PuzzleModalProps> = ({ difficulty, timeLimit, onComp
   }, []);
 
   useEffect(() => {
-    if (loading || puzzles.length === 0) return;
-    
-    const timer = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          onComplete(false);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [loading, puzzles, onComplete]);
+    // If global time ran out, fail the puzzle
+    if (globalTimeLeft <= 0) {
+      onComplete(false);
+    }
+  }, [globalTimeLeft, onComplete]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,12 +48,12 @@ const PuzzleModal: React.FC<PuzzleModalProps> = ({ difficulty, timeLimit, onComp
       if (currentIndex === puzzles.length - 1) {
         onComplete(true);
       } else {
-        setCurrentIndex(prev => prev + 1);
-        setInput('');
+        setCurrentIndex((prev) => prev + 1);
+        setInput("");
       }
     } else {
       // Wrong answer - clear input
-      setInput('');
+      setInput("");
     }
   };
 
@@ -67,13 +63,28 @@ const PuzzleModal: React.FC<PuzzleModalProps> = ({ difficulty, timeLimit, onComp
     }
   }, [loading, currentIndex]);
 
+  const elapsedMs = Date.now() - timeStartedRef.current;
+  const elapsedSeconds = Math.floor(elapsedMs / 1000);
+  const remainingActionTime = Math.max(0, timeLimit - elapsedSeconds);
+
+  // Fail if exceeded action time limit or global time ran out
+  useEffect(() => {
+    if (!loading && (elapsedSeconds > timeLimit || globalTimeLeft <= 0)) {
+      onComplete(false);
+    }
+  }, [elapsedSeconds, timeLimit, globalTimeLeft, onComplete, loading]);
+
   if (loading) {
     return (
       <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div className="bg-emerald-900 border-4 border-yellow-400 p-8 rounded-2xl text-center max-w-md w-full shadow-2xl">
           <div className="animate-bounce mb-4 text-4xl">🍌</div>
-          <h2 className="text-2xl font-bungee text-white mb-2">Fetching Banana Puzzles...</h2>
-          <p className="text-emerald-200">The referee is checking the VAR (Virtual Answer Reality)</p>
+          <h2 className="text-2xl font-bungee text-white mb-2">
+            Fetching Banana Puzzles...
+          </h2>
+          <p className="text-emerald-200">
+            The referee is checking the VAR (Virtual Answer Reality)
+          </p>
         </div>
       </div>
     );
@@ -85,19 +96,26 @@ const PuzzleModal: React.FC<PuzzleModalProps> = ({ difficulty, timeLimit, onComp
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-emerald-900 border-4 border-yellow-400 p-6 rounded-2xl text-center max-w-xl w-full shadow-2xl relative overflow-hidden">
         {/* Timer Bar */}
-        <div className="absolute top-0 left-0 h-2 bg-yellow-400 transition-all duration-1000" style={{ width: `${(timeLeft / timeLimit) * 100}%` }}></div>
-        
+        <div
+          className="absolute top-0 left-0 h-2 bg-yellow-400 transition-all duration-1000"
+          style={{ width: `${(remainingActionTime / timeLimit) * 100}%` }}
+        ></div>
+
         <div className="flex justify-between items-center mb-4">
-          <span className="text-yellow-400 font-bungee">Puzzle {currentIndex + 1} of 3</span>
-          <span className={`font-bungee text-2xl ${timeLeft < 5 ? 'text-red-500 animate-pulse' : 'text-white'}`}>
-            {timeLeft}s
+          <span className="text-yellow-400 font-bungee">
+            Puzzle {currentIndex + 1} of 3
+          </span>
+          <span
+            className={`font-bungee text-2xl ${remainingActionTime < 5 ? "text-red-500 animate-pulse" : "text-white"}`}
+          >
+            {remainingActionTime}s / {globalTimeLeft}s
           </span>
         </div>
 
         <div className="bg-white p-2 rounded-xl border-4 border-emerald-700 mb-6 flex items-center justify-center min-h-[200px]">
-          <img 
-            src={currentPuzzle.question} 
-            alt="Banana Math Puzzle" 
+          <img
+            src={currentPuzzle.question}
+            alt="Banana Math Puzzle"
             className="max-w-full max-h-[300px] object-contain rounded-lg"
             referrerPolicy="no-referrer"
           />
@@ -123,7 +141,7 @@ const PuzzleModal: React.FC<PuzzleModalProps> = ({ difficulty, timeLimit, onComp
           </div>
         </form>
 
-        <button 
+        <button
           onClick={onClose}
           className="mt-4 text-emerald-300 underline hover:text-emerald-100 transition-colors text-sm"
         >
