@@ -1,0 +1,5 @@
+{
+  "name": "Banana Football: Real-Time Multiplayer Puzzle Game",
+  "description": "A fast-paced football-inspired puzzle game where two players compete in a shared 3-minute match. Players perform actions like passing and shooting by solving dynamic fruit-themed math puzzles under pressure.",
+  "requestFramePermissions": []
+}
