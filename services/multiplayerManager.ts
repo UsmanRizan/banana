@@ -1,7 +1,6 @@
-
 import { GameMessage, MatchState, PlayerState } from "../types";
 
-const CHANNEL_NAME = 'banana_football_multiplayer';
+const CHANNEL_NAME = "banana_football_multiplayer";
 
 export class MultiplayerManager {
   private channel: BroadcastChannel;
@@ -20,11 +19,11 @@ export class MultiplayerManager {
     };
   }
 
-  public sendMessage(type: GameMessage['type'], payload: any) {
+  public sendMessage(type: GameMessage["type"], payload: any) {
     const msg: GameMessage = {
       type,
       payload,
-      senderId: this.playerId
+      senderId: this.playerId,
     };
     this.channel.postMessage(msg);
   }
