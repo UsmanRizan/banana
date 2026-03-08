@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { BananaPuzzle, Difficulty } from "../types";
 import { fetchBananaPuzzles } from "../services/bananaApiService";
+import { PUZZLES_PER_ACTION } from "../constants";
 
 interface PuzzleModalProps {
   difficulty: Difficulty;
@@ -26,8 +27,8 @@ const PuzzleModal: React.FC<PuzzleModalProps> = ({
 
   useEffect(() => {
     async function load() {
-      // We fetch a fixed number of puzzles (3) as per original logic
-      const data = await fetchBananaPuzzles(3);
+      // We fetch a fixed number of puzzles based on PUZZLES_PER_ACTION
+      const data = await fetchBananaPuzzles(PUZZLES_PER_ACTION);
       setPuzzles(data);
       setLoading(false);
     }
@@ -103,7 +104,7 @@ const PuzzleModal: React.FC<PuzzleModalProps> = ({
 
         <div className="flex justify-between items-center mb-4">
           <span className="text-yellow-400 font-bungee">
-            Puzzle {currentIndex + 1} of 3
+            Puzzle {currentIndex + 1} of {puzzles.length}
           </span>
           <span
             className={`font-bungee text-2xl ${remainingActionTime < 5 ? "text-red-500 animate-pulse" : "text-white"}`}
